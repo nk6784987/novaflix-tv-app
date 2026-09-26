@@ -1,0 +1,9 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+
+    <!-- Dark window background: no white flash while the app starts (phones and TV) -->
+    <style name="Theme.MyApplication" parent="android:Theme.DeviceDefault.NoActionBar">
+        <item name="android:windowBackground">@color/nova_bg</item>
+        <item name="android:colorBackground">@color/nova_bg</item>
+    </style>
+</resources>

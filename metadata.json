@@ -1,0 +1,8 @@
+{
+  "name": "Novaflix",
+  "description": "Stream movies, TV shows, and anime with Novaflix",
+  "requestFramePermissions": [],
+  "majorCapabilities": [
+    "MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"
+  ]
+}
