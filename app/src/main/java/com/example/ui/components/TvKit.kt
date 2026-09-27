@@ -52,6 +52,7 @@ import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.Shape
 import androidx.compose.ui.graphics.drawscope.Stroke
+import androidx.compose.ui.graphics.drawOutline
 import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.draw.drawWithContent
@@ -100,12 +101,8 @@ fun TvEnvironment(isTv: Boolean, content: @Composable () -> Unit) {
         CompositionLocalProvider(LocalIsTv provides false) { content() }
         return
     }
-    val density = LocalDensity.current
-    val widthDp = LocalConfiguration.current.screenWidthDp
-    val scale = (widthDp / TV_DESIGN_WIDTH_DP).coerceIn(1f, 2f)
     CompositionLocalProvider(
-        LocalIsTv provides true,
-        LocalDensity provides Density(density.density * scale, density.fontScale)
+        LocalIsTv provides true
     ) { content() }
 }
 

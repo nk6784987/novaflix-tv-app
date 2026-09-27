@@ -84,12 +84,19 @@ import androidx.media3.common.TrackGroup
 import androidx.media3.common.TrackSelectionOverride
 import androidx.media3.common.Tracks
 import androidx.media3.common.util.UnstableApi
+import androidx.media3.database.StandaloneDatabaseProvider
+import androidx.media3.datasource.DefaultHttpDataSource
 import androidx.media3.datasource.cache.CacheDataSource
+import androidx.media3.datasource.cache.LeastRecentlyUsedCacheEvictor
+import androidx.media3.datasource.cache.SimpleCache
 import androidx.media3.exoplayer.DefaultLoadControl
 import androidx.media3.exoplayer.DefaultRenderersFactory
 import androidx.media3.exoplayer.ExoPlayer
+import androidx.media3.exoplayer.hls.HlsMediaSource
 import androidx.media3.exoplayer.source.DefaultMediaSourceFactory
+import androidx.media3.exoplayer.source.MediaSource
 import androidx.media3.exoplayer.trackselection.DefaultTrackSelector
+import androidx.media3.exoplayer.upstream.DefaultLoadErrorHandlingPolicy
 import androidx.media3.ui.AspectRatioFrameLayout
 import androidx.media3.ui.CaptionStyleCompat
 import androidx.media3.ui.PlayerView
@@ -388,18 +395,8 @@ fun PlayerScreen(
 
     val trackSelector = remember { DefaultTrackSelector(context) }
 
-    // Disk cache: previously played segments (rewinds, replays, Continue Watching re-opens)
-    // load instantly instead of hitting the network again. Capped at 400MB, oldest evicted first.
-    val streamCache = remember {
-        SimpleCache(
-            File(context.cacheDir, "media_cache"),
-            LeastRecentlyUsedCacheEvictor(400L * 1024 * 1024),
-            StandaloneDatabaseProvider(context)
-        )
-    }
-    DisposableEffect(Unit) {
-        onDispose { streamCache.release() }
-    }
+    // Disk cache singleton: previously played segments load instantly
+    val streamCache = remember { com.example.util.MediaCacheSingleton.getInstance(context) }
 
     val loadControl = remember {
         DefaultLoadControl.Builder()
@@ -598,9 +595,11 @@ fun PlayerScreen(
             // Wrap the network data source with the disk cache: repeat reads of the same
             // segment (seeking backward, replaying, resuming Continue Watching) come from disk.
             val cacheFactory = CacheDataSource.Factory()
-                .setCache(streamCache)
                 .setUpstreamDataSourceFactory(httpFactory)
                 .setFlags(CacheDataSource.FLAG_IGNORE_CACHE_ON_ERROR)
+            if (streamCache != null) {
+                cacheFactory.setCache(streamCache)
+            }
 
             // Retry flaky proxy/CDN responses a few times with a short backoff instead of
             // failing the whole playback on one dropped chunk.

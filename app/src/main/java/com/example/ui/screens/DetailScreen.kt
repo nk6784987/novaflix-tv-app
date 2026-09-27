@@ -127,211 +127,376 @@ fun DetailScreen(
                 modifier = Modifier.fillMaxSize(),
                 contentPadding = PaddingValues(bottom = 30.dp)
             ) {
-                // 1. DETAIL BACKDROP (height: 250px with gradient to bottom)
+                // 1. DETAIL HERO BACKDROP & CONTENT
                 item {
-                    Box(
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .height(if (isTv) 220.dp else 260.dp)
-                    ) {
-                        AsyncImage(
-                            model = item.getFullBackdropUrl() ?: item.getFullPosterUrl(),
-                            contentDescription = item.title,
-                            modifier = Modifier.fillMaxSize(),
-                            contentScale = ContentScale.Crop
-                        )
-                        // .detail-backdrop::after gradient
+                    if (isTv) {
+                        // TV professional side-by-side Hero Layout
                         Box(
                             modifier = Modifier
-                                .fillMaxSize()
-                                .background(
-                                    Brush.verticalGradient(
-                                        colorStops = arrayOf(
-                                            0.0f to Color.Transparent,
-                                            0.55f to Color.Transparent,
-                                            0.85f to DarkBackground.copy(alpha = 0.8f),
-                                            1.0f to DarkBackground
+                                .fillMaxWidth()
+                                .height(380.dp)
+                        ) {
+                            AsyncImage(
+                                model = item.getFullBackdropUrl() ?: item.getFullPosterUrl(),
+                                contentDescription = item.title,
+                                modifier = Modifier.fillMaxSize(),
+                                contentScale = ContentScale.Crop
+                            )
+                            Box(
+                                modifier = Modifier
+                                    .fillMaxSize()
+                                    .background(
+                                        Brush.horizontalGradient(
+                                            colorStops = arrayOf(
+                                                0.0f to DarkBackground,
+                                                0.50f to DarkBackground.copy(alpha = 0.90f),
+                                                1.0f to Color.Transparent
+                                            )
                                         )
                                     )
+                            )
+                            Box(
+                                modifier = Modifier
+                                    .fillMaxSize()
+                                    .background(
+                                        Brush.verticalGradient(
+                                            colorStops = arrayOf(
+                                                0.0f to Color.Transparent,
+                                                0.70f to DarkBackground.copy(alpha = 0.8f),
+                                                1.0f to DarkBackground
+                                            )
+                                        )
+                                    )
+                            )
+
+                            Row(
+                                modifier = Modifier
+                                    .fillMaxSize()
+                                    .padding(horizontal = 32.dp, vertical = 20.dp),
+                                verticalAlignment = Alignment.CenterVertically
+                            ) {
+                                // High resolution poster card on TV
+                                AsyncImage(
+                                    model = item.getFullPosterUrl() ?: item.getFullBackdropUrl(),
+                                    contentDescription = item.title,
+                                    modifier = Modifier
+                                        .width(170.dp)
+                                        .height(255.dp)
+                                        .clip(RoundedCornerShape(16.dp))
+                                        .border(1.dp, BorderColor, RoundedCornerShape(16.dp)),
+                                    contentScale = ContentScale.Crop
                                 )
-                        )
+
+                                Spacer(modifier = Modifier.width(28.dp))
+
+                                Column(
+                                    modifier = Modifier.weight(1f),
+                                    verticalArrangement = Arrangement.Center
+                                ) {
+                                    Surface(
+                                        color = HaiFlixRed,
+                                        shape = RoundedCornerShape(6.dp),
+                                        modifier = Modifier.padding(bottom = 6.dp)
+                                    ) {
+                                        Text(
+                                            text = item.mediaType.name,
+                                            color = Color.White,
+                                            fontSize = 11.sp,
+                                            fontWeight = FontWeight.Bold,
+                                            modifier = Modifier.padding(horizontal = 8.dp, vertical = 4.dp)
+                                        )
+                                    }
+
+                                    Text(
+                                        text = item.title,
+                                        fontSize = 28.sp,
+                                        fontWeight = FontWeight(700),
+                                        color = Color.White,
+                                        maxLines = 2,
+                                        overflow = TextOverflow.Ellipsis
+                                    )
+
+                                    val ratingStr = if (item.rating > 0.0) String.format("%.1f", item.rating) else "N/A"
+                                    val yearStr = item.releaseYear.ifBlank { "Unknown Year" }
+                                    val genreStr = item.genres.firstOrNull()?.let { " ・ $it" } ?: ""
+
+                                    Text(
+                                        text = "★ $ratingStr ・ $yearStr$genreStr",
+                                        fontSize = 14.sp,
+                                        fontWeight = FontWeight(500),
+                                        color = TextSecondaryColor,
+                                        modifier = Modifier.padding(vertical = 6.dp)
+                                    )
+
+                                    Text(
+                                        text = item.overview.ifEmpty { "No storyline available." },
+                                        fontSize = 13.sp,
+                                        color = TextSecondaryColor,
+                                        lineHeight = 19.sp,
+                                        maxLines = 3,
+                                        overflow = TextOverflow.Ellipsis,
+                                        modifier = Modifier.padding(bottom = 16.dp)
+                                    )
+
+                                    Row(
+                                        horizontalArrangement = Arrangement.spacedBy(12.dp),
+                                        verticalAlignment = Alignment.CenterVertically
+                                    ) {
+                                        Button(
+                                            onClick = { onPlayClick(uiState.selectedSeason, 1) },
+                                            colors = ButtonDefaults.buttonColors(containerColor = HaiFlixRed, contentColor = Color.White),
+                                            shape = RoundedCornerShape(50.dp),
+                                            modifier = Modifier
+                                                .tvAutoFocus(isTv)
+                                                .tvFocusRing(RoundedCornerShape(50.dp))
+                                                .height(46.dp)
+                                        ) {
+                                            Row(verticalAlignment = Alignment.CenterVertically) {
+                                                Icon(Icons.Default.PlayArrow, contentDescription = null, tint = Color.White, modifier = Modifier.size(20.dp))
+                                                Spacer(Modifier.width(6.dp))
+                                                Text("PLAY NOW", fontWeight = FontWeight.Bold, fontSize = 14.sp)
+                                            }
+                                        }
+
+                                        if (onWatchOnlineClick != null) {
+                                            OutlinedButton(
+                                                onClick = { onWatchOnlineClick(uiState.selectedSeason, 1) },
+                                                colors = ButtonDefaults.outlinedButtonColors(contentColor = Color.White),
+                                                border = BorderStroke(1.dp, Color.White.copy(alpha = 0.5f)),
+                                                shape = RoundedCornerShape(50.dp),
+                                                modifier = Modifier
+                                                    .tvFocusRing(RoundedCornerShape(50.dp))
+                                                    .height(46.dp)
+                                            ) {
+                                                Row(verticalAlignment = Alignment.CenterVertically) {
+                                                    Icon(Icons.Default.Language, contentDescription = null, tint = Color.White, modifier = Modifier.size(18.dp))
+                                                    Spacer(Modifier.width(6.dp))
+                                                    Text("SERVERS", fontWeight = FontWeight.Bold, fontSize = 13.sp)
+                                                }
+                                            }
+                                        }
+
+                                        ActionIconBtn(
+                                            icon = if (uiState.isInMyList) Icons.Default.Check else Icons.Default.Add,
+                                            label = "My List",
+                                            isActive = uiState.isInMyList,
+                                            onClick = {
+                                                viewModel.toggleMyList()
+                                                val msg = if (uiState.isInMyList) "Removed from My List" else "Added to My List"
+                                                Toast.makeText(context, msg, Toast.LENGTH_SHORT).show()
+                                            }
+                                        )
+
+                                        ActionIconBtn(
+                                            icon = Icons.Outlined.VideoLibrary,
+                                            label = "Trailer",
+                                            isActive = false,
+                                            onClick = {
+                                                val trailer = item.trailerUrl
+                                                if (!trailer.isNullOrBlank()) {
+                                                    showTrailerModal = true
+                                                } else {
+                                                    Toast.makeText(context, "No trailer available.", Toast.LENGTH_SHORT).show()
+                                                }
+                                            }
+                                        )
+                                    }
+                                }
+                            }
+                        }
+                    } else {
+                        // Mobile vertical layout
+                        Box(
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .height(260.dp)
+                        ) {
+                            AsyncImage(
+                                model = item.getFullBackdropUrl() ?: item.getFullPosterUrl(),
+                                contentDescription = item.title,
+                                modifier = Modifier.fillMaxSize(),
+                                contentScale = ContentScale.Crop
+                            )
+                            Box(
+                                modifier = Modifier
+                                    .fillMaxSize()
+                                    .background(
+                                        Brush.verticalGradient(
+                                            colorStops = arrayOf(
+                                                0.0f to Color.Transparent,
+                                                0.55f to Color.Transparent,
+                                                0.85f to DarkBackground.copy(alpha = 0.8f),
+                                                1.0f to DarkBackground
+                                            )
+                                        )
+                                    )
+                            )
+                        }
                     }
                 }
 
-                // 2. DETAIL CONTENT (.detail-content padding: 15px)
-                item {
-                    Column(
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .padding(horizontal = if (isTv) 28.dp else 15.dp)
-                    ) {
-                        // Title: font-size 26px, font-weight 700
-                        Text(
-                            text = item.title,
-                            fontSize = 26.sp,
-                            fontWeight = FontWeight(700),
-                            color = Color.White,
-                            lineHeight = 31.sp,
-                            modifier = Modifier.padding(bottom = 8.dp)
-                        )
-
-                        // Meta info: ★ Rating ・ Year ・ Category
-                        val ratingStr = if (item.rating > 0.0) String.format("%.1f", item.rating) else "N/A"
-                        val yearStr = item.releaseYear.ifBlank { "Unknown Year" }
-                        val genreStr = item.genres.firstOrNull()?.let { " ・ $it" } ?: ""
-
-                        Text(
-                            text = "★ $ratingStr ・ $yearStr$genreStr",
-                            fontSize = 15.sp,
-                            fontWeight = FontWeight(500),
-                            color = TextSecondaryColor,
-                            modifier = Modifier.padding(bottom = 20.dp)
-                        )
-
-                        // PLAY BUTTON (.btn-play-full: red rounded pill with glow)
-                        Button(
-                            onClick = { onPlayClick(uiState.selectedSeason, 1) },
-                            colors = ButtonDefaults.buttonColors(
-                                containerColor = HaiFlixRed,
-                                contentColor = Color.White
-                            ),
-                            shape = RoundedCornerShape(50.dp),
-                            modifier = Modifier.tvAutoFocus(isTv).tvFocusRing(RoundedCornerShape(50.dp))
-                                .then(if (isTv) Modifier.width(260.dp) else Modifier.fillMaxWidth())
-                                .height(52.dp)
-                                .shadow(
-                                    elevation = 15.dp,
-                                    shape = RoundedCornerShape(50.dp),
-                                    ambientColor = HaiFlixRed,
-                                    spotColor = HaiFlixRed
-                                )
-                                .testTag("play-btn")
+                // 2. DETAIL CONTENT FOR MOBILE
+                if (!isTv) {
+                    item {
+                        Column(
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .padding(horizontal = 15.dp)
                         ) {
-                            Row(
-                                verticalAlignment = Alignment.CenterVertically,
-                                horizontalArrangement = Arrangement.Center
-                            ) {
-                                Icon(
-                                    imageVector = Icons.Default.PlayArrow,
-                                    contentDescription = null,
-                                    tint = Color.White,
-                                    modifier = Modifier.size(20.dp)
-                                )
-                                Spacer(modifier = Modifier.width(10.dp))
-                                Text(
-                                    text = "PLAY",
-                                    fontSize = 16.sp,
-                                    fontWeight = FontWeight(700),
-                                    letterSpacing = 1.sp
-                                )
-                            }
-                        }
+                            Text(
+                                text = item.title,
+                                fontSize = 26.sp,
+                                fontWeight = FontWeight(700),
+                                color = Color.White,
+                                lineHeight = 31.sp,
+                                modifier = Modifier.padding(bottom = 8.dp)
+                            )
 
-                        if (onWatchOnlineClick != null) {
-                            Spacer(modifier = Modifier.height(10.dp))
+                            val ratingStr = if (item.rating > 0.0) String.format("%.1f", item.rating) else "N/A"
+                            val yearStr = item.releaseYear.ifBlank { "Unknown Year" }
+                            val genreStr = item.genres.firstOrNull()?.let { " ・ $it" } ?: ""
 
-                            // WATCH ONLINE (Viduki servers) — independent embed provider,
-                            // separate from the native ExoPlayer sources above.
-                            OutlinedButton(
-                                onClick = { onWatchOnlineClick(uiState.selectedSeason, 1) },
-                                colors = ButtonDefaults.outlinedButtonColors(contentColor = Color.White),
-                                border = BorderStroke(1.dp, Color.White.copy(alpha = 0.4f)),
+                            Text(
+                                text = "★ $ratingStr ・ $yearStr$genreStr",
+                                fontSize = 15.sp,
+                                fontWeight = FontWeight(500),
+                                color = TextSecondaryColor,
+                                modifier = Modifier.padding(bottom = 20.dp)
+                            )
+
+                            Button(
+                                onClick = { onPlayClick(uiState.selectedSeason, 1) },
+                                colors = ButtonDefaults.buttonColors(
+                                    containerColor = HaiFlixRed,
+                                    contentColor = Color.White
+                                ),
                                 shape = RoundedCornerShape(50.dp),
-                                modifier = Modifier.tvFocusRing(RoundedCornerShape(50.dp))
-                                    .then(if (isTv) Modifier.width(260.dp) else Modifier.fillMaxWidth())
-                                    .height(48.dp)
+                                modifier = Modifier
+                                    .fillMaxWidth()
+                                    .height(52.dp)
+                                    .shadow(
+                                        elevation = 15.dp,
+                                        shape = RoundedCornerShape(50.dp),
+                                        ambientColor = HaiFlixRed,
+                                        spotColor = HaiFlixRed
+                                    )
+                                    .testTag("play-btn")
                             ) {
                                 Row(
                                     verticalAlignment = Alignment.CenterVertically,
                                     horizontalArrangement = Arrangement.Center
                                 ) {
                                     Icon(
-                                        imageVector = Icons.Default.Language,
+                                        imageVector = Icons.Default.PlayArrow,
                                         contentDescription = null,
                                         tint = Color.White,
-                                        modifier = Modifier.size(18.dp)
+                                        modifier = Modifier.size(20.dp)
                                     )
                                     Spacer(modifier = Modifier.width(10.dp))
                                     Text(
-                                        text = "WATCH ONLINE (SERVERS)",
-                                        fontSize = 14.sp,
-                                        fontWeight = FontWeight(600),
-                                        letterSpacing = 0.5.sp
+                                        text = "PLAY",
+                                        fontSize = 16.sp,
+                                        fontWeight = FontWeight(700),
+                                        letterSpacing = 1.sp
                                     )
                                 }
                             }
-                        }
 
-                        Spacer(modifier = Modifier.height(25.dp))
+                            if (onWatchOnlineClick != null) {
+                                Spacer(modifier = Modifier.height(10.dp))
 
-                        // STORYLINE / SYNOPSIS (.detail-storyline: 15px, color #a0a0a0, line-height 1.6)
-                        Text(
-                            text = item.overview.ifEmpty { "No storyline available." },
-                            fontSize = 15.sp,
-                            fontWeight = FontWeight(400),
-                            color = TextSecondaryColor,
-                            lineHeight = 24.sp,
-                            maxLines = if (isTv) 4 else Int.MAX_VALUE,
-                            overflow = TextOverflow.Ellipsis,
-                            modifier = Modifier
-                                .then(if (isTv) Modifier.widthIn(max = 640.dp) else Modifier)
-                                .padding(bottom = 25.dp)
-                        )
-
-                        // SECONDARY ACTIONS (.secondary-actions-container: Trailer, My List, Share)
-                        Row(
-                            modifier = Modifier
-                                .fillMaxWidth()
-                                .padding(vertical = 10.dp),
-                            horizontalArrangement = if (isTv) Arrangement.spacedBy(20.dp) else Arrangement.SpaceAround,
-                            verticalAlignment = Alignment.CenterVertically
-                        ) {
-                            // 1. Trailer Button
-                            ActionIconBtn(
-                                icon = Icons.Outlined.VideoLibrary,
-                                label = "Trailer",
-                                isActive = false,
-                                onClick = {
-                                    val trailer = item.trailerUrl
-                                    if (!trailer.isNullOrBlank()) {
-                                        showTrailerModal = true
-                                    } else {
-                                        Toast.makeText(context, "No trailer available for this title.", Toast.LENGTH_SHORT).show()
-                                    }
-                                }
-                            )
-
-                            // 2. My List (Watchlist) Button
-                            ActionIconBtn(
-                                icon = if (uiState.isInMyList) Icons.Default.Check else Icons.Default.Add,
-                                label = "My List",
-                                isActive = uiState.isInMyList,
-                                onClick = {
-                                    viewModel.toggleMyList()
-                                    val msg = if (uiState.isInMyList) "Removed from My List" else "Added to My List"
-                                    Toast.makeText(context, msg, Toast.LENGTH_SHORT).show()
-                                }
-                            )
-
-                            // 3. Share Button
-                            ActionIconBtn(
-                                icon = Icons.Default.Share,
-                                label = "Share",
-                                isActive = false,
-                                onClick = {
-                                    val shareIntent = Intent(Intent.ACTION_SEND).apply {
-                                        type = "text/plain"
-                                        putExtra(
-                                            Intent.EXTRA_TEXT,
-                                            "Check out \"${item.title}\" on NovaFlix!\nhttps://novaflix.app"
+                                OutlinedButton(
+                                    onClick = { onWatchOnlineClick(uiState.selectedSeason, 1) },
+                                    colors = ButtonDefaults.outlinedButtonColors(contentColor = Color.White),
+                                    border = BorderStroke(1.dp, Color.White.copy(alpha = 0.4f)),
+                                    shape = RoundedCornerShape(50.dp),
+                                    modifier = Modifier
+                                        .fillMaxWidth()
+                                        .height(48.dp)
+                                ) {
+                                    Row(
+                                        verticalAlignment = Alignment.CenterVertically,
+                                        horizontalArrangement = Arrangement.Center
+                                    ) {
+                                        Icon(
+                                            imageVector = Icons.Default.Language,
+                                            contentDescription = null,
+                                            tint = Color.White,
+                                            modifier = Modifier.size(18.dp)
+                                        )
+                                        Spacer(modifier = Modifier.width(10.dp))
+                                        Text(
+                                            text = "WATCH ONLINE (SERVERS)",
+                                            fontSize = 14.sp,
+                                            fontWeight = FontWeight(600),
+                                            letterSpacing = 0.5.sp
                                         )
                                     }
-                                    context.startActivity(Intent.createChooser(shareIntent, "Share \"${item.title}\""))
                                 }
-                            )
-                        }
+                            }
 
-                        Spacer(modifier = Modifier.height(20.dp))
+                            Spacer(modifier = Modifier.height(25.dp))
+
+                            Text(
+                                text = item.overview.ifEmpty { "No storyline available." },
+                                fontSize = 15.sp,
+                                fontWeight = FontWeight(400),
+                                color = TextSecondaryColor,
+                                lineHeight = 24.sp,
+                                modifier = Modifier.padding(bottom = 25.dp)
+                            )
+
+                            Row(
+                                modifier = Modifier
+                                    .fillMaxWidth()
+                                    .padding(vertical = 10.dp),
+                                horizontalArrangement = Arrangement.SpaceAround,
+                                verticalAlignment = Alignment.CenterVertically
+                            ) {
+                                ActionIconBtn(
+                                    icon = Icons.Outlined.VideoLibrary,
+                                    label = "Trailer",
+                                    isActive = false,
+                                    onClick = {
+                                        val trailer = item.trailerUrl
+                                        if (!trailer.isNullOrBlank()) {
+                                            showTrailerModal = true
+                                        } else {
+                                            Toast.makeText(context, "No trailer available.", Toast.LENGTH_SHORT).show()
+                                        }
+                                    }
+                                )
+
+                                ActionIconBtn(
+                                    icon = if (uiState.isInMyList) Icons.Default.Check else Icons.Default.Add,
+                                    label = "My List",
+                                    isActive = uiState.isInMyList,
+                                    onClick = {
+                                        viewModel.toggleMyList()
+                                        val msg = if (uiState.isInMyList) "Removed from My List" else "Added to My List"
+                                        Toast.makeText(context, msg, Toast.LENGTH_SHORT).show()
+                                    }
+                                )
+
+                                ActionIconBtn(
+                                    icon = Icons.Default.Share,
+                                    label = "Share",
+                                    isActive = false,
+                                    onClick = {
+                                        val shareIntent = Intent(Intent.ACTION_SEND).apply {
+                                            type = "text/plain"
+                                            putExtra(
+                                                Intent.EXTRA_TEXT,
+                                                "Check out \"${item.title}\" on NovaFlix!\nhttps://novaflix.app"
+                                            )
+                                        }
+                                        context.startActivity(Intent.createChooser(shareIntent, "Share \"${item.title}\""))
+                                    }
+                                )
+                            }
+
+                            Spacer(modifier = Modifier.height(20.dp))
+                        }
                     }
                 }
 
