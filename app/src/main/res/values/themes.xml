@@ -1,9 +1,20 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
 
-    <!-- Dark window background: no white flash while the app starts (phones and TV) -->
+    <!-- Splash screen theme: shows the app icon on a dark background while Compose boots.
+         This is what Android shows BEFORE setContent() runs — no black flash. -->
+    <style name="Theme.NovaFlix.Splash" parent="Theme.SplashScreen">
+        <item name="windowSplashScreenBackground">@color/nova_bg</item>
+        <item name="windowSplashScreenAnimatedIcon">@mipmap/ic_launcher</item>
+        <item name="postSplashScreenTheme">@style/Theme.MyApplication</item>
+    </style>
+
+    <!-- App runtime theme: dark window so even the very first frame is dark (no white flash). -->
     <style name="Theme.MyApplication" parent="android:Theme.DeviceDefault.NoActionBar">
         <item name="android:windowBackground">@color/nova_bg</item>
         <item name="android:colorBackground">@color/nova_bg</item>
+        <item name="android:windowNoTitle">true</item>
+        <item name="android:windowFullscreen">false</item>
     </style>
+
 </resources>

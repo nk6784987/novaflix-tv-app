@@ -30,8 +30,9 @@ data class MediaItem(
         val clean = posterPath.trim()
         return when {
             clean.startsWith("http://") || clean.startsWith("https://") -> clean
-            clean.startsWith("/") -> "https://image.tmdb.org/t/p/w500$clean"
-            else -> "https://image.tmdb.org/t/p/w500/$clean"
+            // w780 = higher-res TMDB poster (was w500 — blurry on large TV screens)
+            clean.startsWith("/") -> "https://image.tmdb.org/t/p/w780$clean"
+            else -> "https://image.tmdb.org/t/p/w780/$clean"
         }
     }
 
@@ -40,6 +41,7 @@ data class MediaItem(
         val clean = backdropPath.trim()
         return when {
             clean.startsWith("http://") || clean.startsWith("https://") -> clean
+            // w1280 = best banner resolution TMDB offers for TV hero banners
             clean.startsWith("/") -> "https://image.tmdb.org/t/p/w1280$clean"
             else -> "https://image.tmdb.org/t/p/w1280/$clean"
         }

@@ -238,7 +238,7 @@ private fun WatchLibraryCard(
                     .background(Color.Black)
             ) {
                 AsyncImage(
-                    model = item.posterPath ?: item.backdropPath,
+                    model = item.getFullPosterUrl() ?: item.getFullBackdropUrl(),
                     contentDescription = item.title,
                     modifier = Modifier.fillMaxSize(),
                     contentScale = ContentScale.Crop

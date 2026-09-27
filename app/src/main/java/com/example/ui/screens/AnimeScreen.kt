@@ -511,7 +511,7 @@ private fun AnimeHeroBanner(
                     .tvFocusRing(RoundedCornerShape(10.dp)).clickable { onDetailClick(media) }
             ) {
                 AsyncImage(
-                    model = media.backdropPath ?: media.posterPath,
+                    model = media.getFullBackdropUrl() ?: media.getFullPosterUrl(),
                     contentDescription = media.title,
                     contentScale = ContentScale.Crop,
                     modifier = Modifier.fillMaxSize()
@@ -702,14 +702,14 @@ private fun AnimeCard(
     ) {
         Box(
             modifier = Modifier
-                .width(125.dp)
-                .height(180.dp)
-                .clip(RoundedCornerShape(8.dp))
+                .width(if (com.example.ui.components.LocalIsTv.current) 170.dp else 125.dp)
+                .height(if (com.example.ui.components.LocalIsTv.current) 240.dp else 180.dp)
+                .clip(RoundedCornerShape(10.dp))
                 .background(CardBackground)
-                .border(1.dp, BorderColor, RoundedCornerShape(8.dp))
+                .border(1.dp, BorderColor, RoundedCornerShape(10.dp))
         ) {
             AsyncImage(
-                model = media.posterPath ?: media.backdropPath,
+                model = media.getFullPosterUrl() ?: media.getFullBackdropUrl(),
                 contentDescription = media.title,
                 contentScale = ContentScale.Crop,
                 modifier = Modifier.fillMaxSize()

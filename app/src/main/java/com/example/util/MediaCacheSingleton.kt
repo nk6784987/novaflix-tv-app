@@ -27,7 +27,7 @@ object MediaCacheSingleton {
                         if (!cacheDir.exists()) {
                             cacheDir.mkdirs()
                         }
-                        val evictor = LeastRecentlyUsedCacheEvictor(300L * 1024 * 1024)
+                        val evictor = LeastRecentlyUsedCacheEvictor(512L * 1024 * 1024) // 512 MB - TV needs larger cache
                         val dbProvider = StandaloneDatabaseProvider(context.applicationContext)
                         SimpleCache(cacheDir, evictor, dbProvider)
                     }.onSuccess {

@@ -498,7 +498,7 @@ private fun SeriesHeroBanner(
                     .tvFocusRing(RoundedCornerShape(10.dp)).clickable { onDetailClick(media) }
             ) {
                 AsyncImage(
-                    model = media.backdropPath ?: media.posterPath,
+                    model = media.getFullBackdropUrl() ?: media.getFullPosterUrl(),
                     contentDescription = media.title,
                     contentScale = ContentScale.Crop,
                     modifier = Modifier.fillMaxSize()
@@ -684,34 +684,43 @@ fun Top10MediaCard(
     media: MediaItem,
     onClick: () -> Unit
 ) {
+    val isTv = com.example.ui.components.LocalIsTv.current
+    // TV: much bigger cards for the 10-foot experience
+    val cardWidth = if (isTv) 220.dp else 160.dp
+    val cardHeight = if (isTv) 270.dp else 200.dp
+    val posterWidth = if (isTv) 155.dp else 115.dp
+    val posterHeight = if (isTv) 230.dp else 170.dp
+    val rankSize = if (isTv) 120.sp else 90.sp
+
     Box(
         modifier = Modifier.pressScale(onClick)
-            .width(160.dp)
-            .height(200.dp)
+            .width(cardWidth)
+            .height(cardHeight)
     ) {
-        // Large Number
+        // Large rank number in background
         Text(
             text = "$rank",
-            fontSize = 90.sp,
+            fontSize = rankSize,
             fontWeight = FontWeight.Black,
-            color = Color(0xFF2A2A2A),
+            // Stroke-like gradient: visible on dark BG but doesn't overshadow poster
+            color = Color(0xFF2E2E2E),
             modifier = Modifier
                 .align(Alignment.BottomStart)
-                .offset(x = (-4).dp, y = 14.dp)
+                .offset(x = (-4).dp, y = 16.dp)
         )
 
-        // Poster
+        // Poster card
         Box(
             modifier = Modifier
-                .width(115.dp)
-                .height(170.dp)
+                .width(posterWidth)
+                .height(posterHeight)
                 .align(Alignment.TopEnd)
-                .clip(RoundedCornerShape(8.dp))
+                .clip(RoundedCornerShape(10.dp))
                 .background(CardBackground)
-                .border(1.dp, BorderColor, RoundedCornerShape(8.dp))
+                .border(1.dp, BorderColor, RoundedCornerShape(10.dp))
         ) {
             AsyncImage(
-                model = media.posterPath ?: media.backdropPath,
+                model = media.getFullPosterUrl() ?: media.getFullBackdropUrl(),
                 contentDescription = media.title,
                 contentScale = ContentScale.Crop,
                 modifier = Modifier.fillMaxSize()
@@ -722,27 +731,48 @@ fun Top10MediaCard(
                         .align(Alignment.TopEnd)
                         .padding(5.dp)
                         .clip(RoundedCornerShape(4.dp))
-                        .background(Color.Black.copy(alpha = 0.75f))
-                        .padding(horizontal = 4.dp, vertical = 2.dp)
+                        .background(Color.Black.copy(alpha = 0.80f))
+                        .padding(horizontal = 5.dp, vertical = 3.dp)
                 ) {
                     Row(
                         verticalAlignment = Alignment.CenterVertically,
-                        horizontalArrangement = Arrangement.spacedBy(2.dp)
+                        horizontalArrangement = Arrangement.spacedBy(3.dp)
                     ) {
                         Icon(
                             imageVector = Icons.Default.Star,
                             contentDescription = null,
                             tint = Color(0xFFFFB800),
-                            modifier = Modifier.size(10.dp)
+                            modifier = Modifier.size(if (isTv) 13.dp else 10.dp)
                         )
                         Text(
                             text = String.format("%.1f", media.rating),
                             color = Color.White,
-                            fontSize = 10.sp,
+                            fontSize = if (isTv) 12.sp else 10.sp,
                             fontWeight = FontWeight.Bold
                         )
                     }
                 }
+            }
+            // Title overlay at bottom
+            Box(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .align(Alignment.BottomCenter)
+                    .background(
+                        androidx.compose.ui.graphics.Brush.verticalGradient(
+                            listOf(Color.Transparent, Color.Black.copy(alpha = 0.85f))
+                        )
+                    )
+                    .padding(horizontal = 8.dp, vertical = 8.dp)
+            ) {
+                Text(
+                    text = media.title,
+                    color = Color.White,
+                    fontSize = if (isTv) 12.sp else 10.sp,
+                    fontWeight = FontWeight.SemiBold,
+                    maxLines = 1,
+                    overflow = androidx.compose.ui.text.style.TextOverflow.Ellipsis
+                )
             }
         }
     }
@@ -753,20 +783,24 @@ private fun SeriesCard(
     media: MediaItem,
     onClick: () -> Unit
 ) {
+    val isTv = com.example.ui.components.LocalIsTv.current
+    val cardWidth = if (isTv) 170.dp else 125.dp
+    val cardHeight = if (isTv) 240.dp else 180.dp
+
     Column(
         modifier = Modifier.pressScale(onClick)
-            .width(125.dp)
+            .width(cardWidth)
     ) {
         Box(
             modifier = Modifier
-                .width(125.dp)
-                .height(180.dp)
-                .clip(RoundedCornerShape(8.dp))
+                .width(cardWidth)
+                .height(cardHeight)
+                .clip(RoundedCornerShape(10.dp))
                 .background(CardBackground)
-                .border(1.dp, BorderColor, RoundedCornerShape(8.dp))
+                .border(1.dp, BorderColor, RoundedCornerShape(10.dp))
         ) {
             AsyncImage(
-                model = media.posterPath ?: media.backdropPath,
+                model = media.getFullPosterUrl() ?: media.getFullBackdropUrl(),
                 contentDescription = media.title,
                 contentScale = ContentScale.Crop,
                 modifier = Modifier.fillMaxSize()

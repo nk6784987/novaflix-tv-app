@@ -22,4 +22,25 @@ data class DownloadEntity(
     val status: String = "QUEUED", // QUEUED, DOWNLOADING, COMPLETED, FAILED, PAUSED
     val progressPercent: Int = 0,
     val createdAtTimestamp: Long = System.currentTimeMillis()
-)
+) {
+    /** Build a proper TMDB image URL from the raw path stored in DB. */
+    fun getFullPosterUrl(): String? {
+        if (posterPath.isNullOrBlank() || posterPath.equals("none", ignoreCase = true)) return null
+        val clean = posterPath.trim()
+        return when {
+            clean.startsWith("http://") || clean.startsWith("https://") -> clean
+            clean.startsWith("/") -> "https://image.tmdb.org/t/p/w780$clean"
+            else -> "https://image.tmdb.org/t/p/w780/$clean"
+        }
+    }
+
+    fun getFullBackdropUrl(): String? {
+        if (backdropPath.isNullOrBlank() || backdropPath.equals("none", ignoreCase = true)) return getFullPosterUrl()
+        val clean = backdropPath.trim()
+        return when {
+            clean.startsWith("http://") || clean.startsWith("https://") -> clean
+            clean.startsWith("/") -> "https://image.tmdb.org/t/p/w1280$clean"
+            else -> "https://image.tmdb.org/t/p/w1280/$clean"
+        }
+    }
+}

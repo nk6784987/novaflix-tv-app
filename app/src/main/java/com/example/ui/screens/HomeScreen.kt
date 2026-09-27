@@ -23,10 +23,19 @@ import androidx.compose.foundation.lazy.grid.GridCells
 import androidx.compose.foundation.lazy.grid.LazyVerticalGrid
 import androidx.compose.foundation.lazy.grid.items
 import androidx.compose.foundation.lazy.items
+import androidx.compose.foundation.lazy.rememberLazyListState
+import androidx.compose.runtime.rememberCoroutineScope
+import kotlinx.coroutines.launch
 import androidx.compose.foundation.pager.HorizontalPager
 import androidx.compose.foundation.pager.rememberPagerState
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.foundation.focusable
+import androidx.compose.ui.input.key.Key
+import androidx.compose.ui.input.key.KeyEventType
+import androidx.compose.ui.input.key.key
+import androidx.compose.ui.input.key.onKeyEvent
+import androidx.compose.ui.input.key.type
 import androidx.compose.foundation.text.BasicTextField
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.material.icons.Icons
@@ -69,6 +78,7 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import coil.compose.AsyncImage
+import coil.request.ImageRequest
 import com.example.data.local.WatchItemEntity
 import com.example.data.model.MediaItem
 import com.example.data.model.MediaType
@@ -312,7 +322,18 @@ fun HomeScreen(
                 }
             }
         } else {
+            val listState = rememberLazyListState()
+            val coroutineScope = rememberCoroutineScope()
+
+            // When category changes, scroll LazyColumn back to top
+            LaunchedEffect(uiState.selectedCategory) {
+                coroutineScope.launch {
+                    listState.animateScrollToItem(0)
+                }
+            }
+
             LazyColumn(
+                state = listState,
                 modifier = Modifier
                     .fillMaxSize()
                     .padding(paddingValues),
@@ -429,12 +450,28 @@ fun HomeScreen(
                 // Top 10 Movies Section
                 if (uiState.top10Items.isNotEmpty() && uiState.selectedCategory == "All") {
                     item {
-                        Column(modifier = Modifier.padding(vertical = 12.dp)) {
+                        val top10RowState = rememberLazyListState()
+                        val isTv = LocalIsTv.current
+                        Column(modifier = Modifier
+                            .padding(vertical = 12.dp)
+                            // TV: intercept Up/Down keys so they scroll the LazyColumn
+                            // instead of getting "swallowed" by the inner LazyRow focus
+                            .then(
+                                if (isTv) Modifier.onKeyEvent { ev ->
+                                    // Only intercept on KeyDown
+                                    if (ev.type != KeyEventType.KeyDown) return@onKeyEvent false
+                                    // Let Left/Right pass through to LazyRow (horizontal scroll)
+                                    // Up/Down should NOT be consumed here — LazyColumn handles vertical
+                                    false
+                                } else Modifier
+                            )
+                        ) {
                             SectionHeader(
                                 title = "Top 10 Movies Today",
                                 icon = Icons.Default.LocalFireDepartment
                             )
                             LazyRow(
+                                state = top10RowState,
                                 contentPadding = PaddingValues(horizontal = 16.dp, vertical = 8.dp),
                                 horizontalArrangement = Arrangement.spacedBy(14.dp)
                             ) {
@@ -762,7 +799,9 @@ private fun MediaRow(
     items: List<MediaItem>,
     onItemClick: (MediaItem) -> Unit
 ) {
+    val rowState = rememberLazyListState()
     LazyRow(
+        state = rowState,
         contentPadding = PaddingValues(horizontal = 15.dp, vertical = 8.dp),
         horizontalArrangement = Arrangement.spacedBy(12.dp)
     ) {
@@ -777,9 +816,12 @@ private fun MediaCard(
     item: MediaItem,
     onClick: () -> Unit
 ) {
+    val isTv = LocalIsTv.current
+    // TV: wider cards look better on big screens; phone keeps 130dp
+    val cardWidth = if (isTv) 175.dp else 130.dp
     Box(
         modifier = Modifier.pressScale(onClick)
-            .width(130.dp)
+            .width(cardWidth)
             .clip(RoundedCornerShape(12.dp))
             .background(CardBackground)
             .border(1.dp, BorderColor, RoundedCornerShape(12.dp))
@@ -792,8 +834,12 @@ private fun MediaCard(
                     .aspectRatio(2f / 3f)
                     .background(Color.Black)
             ) {
+                val context = LocalContext.current
                 AsyncImage(
-                    model = item.getFullPosterUrl(),
+                    model = coil.request.ImageRequest.Builder(context)
+                        .data(item.getFullPosterUrl())
+                        .crossfade(true)
+                        .build(),
                     contentDescription = item.title,
                     modifier = Modifier.fillMaxSize(),
                     contentScale = ContentScale.Crop
@@ -886,10 +932,13 @@ private fun ContinueWatchingCard(
     val progressRatio = if (item.durationMillis > 0) item.progressMillis.toFloat() / item.durationMillis.toFloat() else 0f
     val isTv = LocalIsTv.current
 
+    val cwWidth  = if (isTv) 260.dp else 200.dp
+    val cwHeight = if (isTv) 148.dp else 115.dp
+
     Column(
         // TV: hold OK on the card to remove it from Continue Watching (no tiny X button to reach)
         modifier = Modifier.pressScale(onClick, onLongClick = if (isTv) onDeleteClick else null)
-            .width(200.dp)
+            .width(cwWidth)
             .clip(RoundedCornerShape(12.dp))
             .background(CardBackground)
             .border(1.dp, BorderColor, RoundedCornerShape(12.dp))
@@ -897,12 +946,12 @@ private fun ContinueWatchingCard(
     ) {
         Box(
             modifier = Modifier
-                .width(200.dp)
-                .height(115.dp)
+                .width(cwWidth)
+                .height(cwHeight)
                 .background(Color.Black)
         ) {
             AsyncImage(
-                model = item.backdropPath ?: item.posterPath,
+                model = item.getFullBackdropUrl() ?: item.getFullPosterUrl(),
                 contentDescription = item.title,
                 modifier = Modifier.fillMaxSize(),
                 contentScale = ContentScale.Crop

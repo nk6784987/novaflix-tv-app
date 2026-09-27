@@ -639,9 +639,10 @@ fun DetailScreen(
         }
 
         // TRAILER MODAL OVERLAY (.trailer-modal)
-        if (showTrailerModal && !item?.trailerUrl.isNullOrBlank()) {
+        val safeTrailerUrl = item?.trailerUrl?.takeIf { it.isNotBlank() }
+        if (showTrailerModal && safeTrailerUrl != null) {
             TrailerDialog(
-                trailerUrl = item!!.trailerUrl!!,
+                trailerUrl = safeTrailerUrl,
                 onDismiss = { showTrailerModal = false }
             )
         }

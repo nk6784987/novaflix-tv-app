@@ -343,7 +343,7 @@ fun DownloadItemRow(
                     .background(Color.Black)
             ) {
                 AsyncImage(
-                    model = download.posterPath ?: download.backdropPath,
+                    model = download.getFullPosterUrl() ?: download.getFullBackdropUrl(),
                     contentDescription = download.title,
                     contentScale = ContentScale.Crop,
                     modifier = Modifier.fillMaxSize()

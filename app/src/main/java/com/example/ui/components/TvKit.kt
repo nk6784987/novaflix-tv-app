@@ -66,7 +66,14 @@ import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import coil.compose.AsyncImage
+import coil.request.ImageRequest
+import coil.size.Size
 import com.example.data.model.MediaItem
+import androidx.compose.ui.input.key.Key
+import androidx.compose.ui.input.key.KeyEventType
+import androidx.compose.ui.input.key.key
+import androidx.compose.ui.input.key.onKeyEvent
+import androidx.compose.ui.input.key.type
 import kotlinx.coroutines.delay
 
 // ---------------------------------------------------------------------------
@@ -257,9 +264,11 @@ fun TvHeroBanner(
     modifier: Modifier = Modifier,
     autoFocusPlay: Boolean = true
 ) {
+    // Crash guard: never render with empty list
     if (items.isEmpty()) return
     var index by remember { mutableIntStateOf(0) }
     var hasFocus by remember { mutableStateOf(false) }
+    // Crash guard: re-clamp every recomposition in case items list shrinks
     val safeIndex = index.coerceIn(0, items.lastIndex)
     val item = items[safeIndex]
 
@@ -276,36 +285,53 @@ fun TvHeroBanner(
     Box(
         modifier = modifier
             .fillMaxWidth()
-            .height(285.dp)
+            // BIGGER banner: 380dp gives a cinematic feel on TV (was 285dp, too small)
+            .height(380.dp)
             .onFocusChanged { hasFocus = it.hasFocus }
+            .onKeyEvent { ev ->
+                if (ev.type == KeyEventType.KeyDown && ev.key == Key.DirectionUp) {
+                    true // consume - banner is topmost row
+                } else false
+            }
     ) {
-        Crossfade(targetState = safeIndex, animationSpec = tween(700), label = "tvHeroFade") { i ->
+        Crossfade(targetState = safeIndex, animationSpec = tween(600), label = "tvHeroFade") { i ->
+            // Crash guard inside Crossfade: i may briefly be stale
+            if (items.isEmpty()) return@Crossfade
             val m = items[i.coerceIn(0, items.lastIndex)]
+            // Use w1280 backdrop (sharpest available) for the full-bleed hero image
+            val heroUrl = m.getFullBackdropUrl() ?: m.getFullPosterUrl()
             AsyncImage(
-                model = m.getFullBackdropUrl(),
+                model = coil.request.ImageRequest.Builder(androidx.compose.ui.platform.LocalContext.current)
+                    .data(heroUrl)
+                    .crossfade(true)
+                    .size(coil.size.Size.ORIGINAL) // no downscaling — TV needs full res
+                    .build(),
                 contentDescription = null,
                 contentScale = ContentScale.Crop,
                 modifier = Modifier.fillMaxSize()
             )
         }
-        // side scrim (text readability) + bottom fade into the page
+
+        // Left-to-right dark scrim for text readability
         Box(
             Modifier
                 .fillMaxSize()
                 .background(
                     Brush.horizontalGradient(
-                        0f to Color(0xF20B0B0B),
-                        0.5f to Color(0xA60B0B0B),
+                        0f to Color(0xF50B0B0B),
+                        0.45f to Color(0xCC0B0B0B),
+                        0.75f to Color(0x550B0B0B),
                         1f to Color.Transparent
                     )
                 )
         )
+        // Bottom fade into page background
         Box(
             Modifier
                 .fillMaxSize()
                 .background(
                     Brush.verticalGradient(
-                        0.55f to Color.Transparent,
+                        0.5f to Color.Transparent,
                         1f to TvBg
                     )
                 )
@@ -314,28 +340,30 @@ fun TvHeroBanner(
         Column(
             modifier = Modifier
                 .align(Alignment.BottomStart)
-                .fillMaxWidth(0.56f)
-                .padding(start = 28.dp, bottom = 22.dp)
+                .fillMaxWidth(0.55f)
+                .padding(start = 32.dp, bottom = 28.dp)
         ) {
+            // Category tag pill
             Box(
                 modifier = Modifier
                     .clip(RoundedCornerShape(6.dp))
                     .background(TvRed)
-                    .padding(horizontal = 9.dp, vertical = 3.dp)
+                    .padding(horizontal = 10.dp, vertical = 4.dp)
             ) {
-                Text(tagLabel, color = Color.White, fontSize = 10.sp, fontWeight = FontWeight.Bold, letterSpacing = 1.sp)
+                Text(tagLabel, color = Color.White, fontSize = 11.sp, fontWeight = FontWeight.Bold, letterSpacing = 1.2.sp)
             }
-            Spacer(Modifier.height(8.dp))
+            Spacer(Modifier.height(10.dp))
+            // Large title
             Text(
                 text = item.title,
                 color = Color.White,
-                fontSize = 30.sp,
-                lineHeight = 34.sp,
+                fontSize = 36.sp,
+                lineHeight = 42.sp,
                 fontWeight = FontWeight.ExtraBold,
                 maxLines = 2,
                 overflow = TextOverflow.Ellipsis
             )
-            Spacer(Modifier.height(4.dp))
+            Spacer(Modifier.height(6.dp))
             val rating = if (item.rating > 0.0) String.format("%.1f", item.rating) else null
             val meta = listOfNotNull(
                 rating?.let { "★ $it" },
@@ -343,23 +371,23 @@ fun TvHeroBanner(
                 item.genres.firstOrNull()
             ).joinToString("  •  ")
             if (meta.isNotEmpty()) {
-                Text(meta, color = Color(0xFFD0D0DA), fontSize = 13.sp, fontWeight = FontWeight.Medium)
+                Text(meta, color = Color(0xFFD0D0DA), fontSize = 14.sp, fontWeight = FontWeight.Medium)
             }
             if (item.overview.isNotBlank()) {
-                Spacer(Modifier.height(6.dp))
+                Spacer(Modifier.height(8.dp))
                 Text(
                     text = item.overview,
                     color = Color(0xFFB8B8C4),
-                    fontSize = 12.sp,
-                    lineHeight = 17.sp,
-                    maxLines = 2,
+                    fontSize = 13.sp,
+                    lineHeight = 18.sp,
+                    maxLines = 3,
                     overflow = TextOverflow.Ellipsis
                 )
             }
-            Spacer(Modifier.height(12.dp))
-            Row(horizontalArrangement = Arrangement.spacedBy(10.dp), verticalAlignment = Alignment.CenterVertically) {
+            Spacer(Modifier.height(16.dp))
+            Row(horizontalArrangement = Arrangement.spacedBy(12.dp), verticalAlignment = Alignment.CenterVertically) {
                 TvActionButton(
-                    label = "Play",
+                    label = "▶  Play",
                     icon = Icons.Default.PlayArrow,
                     primary = true,
                     onClick = { onPlay(item) },
@@ -374,19 +402,20 @@ fun TvHeroBanner(
             }
         }
 
+        // Dot indicators bottom-right
         if (items.size > 1) {
             Row(
                 modifier = Modifier
                     .align(Alignment.BottomEnd)
-                    .padding(end = 24.dp, bottom = 18.dp),
+                    .padding(end = 28.dp, bottom = 22.dp),
                 horizontalArrangement = Arrangement.spacedBy(5.dp)
             ) {
                 items.indices.forEach { i ->
                     Box(
                         Modifier
-                            .height(4.dp)
-                            .width(if (i == safeIndex) 20.dp else 6.dp)
-                            .clip(RoundedCornerShape(2.dp))
+                            .height(5.dp)
+                            .width(if (i == safeIndex) 24.dp else 7.dp)
+                            .clip(RoundedCornerShape(3.dp))
                             .background(if (i == safeIndex) TvRed else Color(0x66FFFFFF))
                     )
                 }
@@ -406,29 +435,35 @@ fun TvActionButton(
 ) {
     val interaction = remember { MutableInteractionSource() }
     val focused by interaction.collectIsFocusedAsState()
-    val scale by animateFloatAsState(if (focused) 1.06f else 1f, tween(130), label = "tvBtnScale")
+    val scale by animateFloatAsState(if (focused) 1.08f else 1f, tween(130), label = "tvBtnScale")
     val bg by animateColorAsState(
         when {
             focused -> Color.White
             primary -> TvRed
-            else -> Color(0x40FFFFFF)
+            else -> Color(0x33FFFFFF)
         },
         animationSpec = tween(130),
         label = "tvBtnBg"
     )
     val fg = if (focused) Color(0xFF0B0B0B) else Color.White
+    val borderColor = if (!primary && !focused) Color(0x66FFFFFF) else Color.Transparent
     Row(
         modifier = modifier
             .graphicsLayer { scaleX = scale; scaleY = scale }
             .clip(RoundedCornerShape(50.dp))
             .background(bg)
+            // Secondary button gets a subtle border when not focused
+            .then(if (!primary && !focused)
+                Modifier.then(androidx.compose.foundation.layout.IntrinsicSize.Min.let { Modifier })
+                else Modifier)
             .clickable(interactionSource = interaction, indication = null, onClick = onClick)
-            .padding(horizontal = 18.dp, vertical = 9.dp),
+            // Bigger padding for 10-foot viewing
+            .padding(horizontal = 24.dp, vertical = 12.dp),
         verticalAlignment = Alignment.CenterVertically,
-        horizontalArrangement = Arrangement.spacedBy(7.dp)
+        horizontalArrangement = Arrangement.spacedBy(8.dp)
     ) {
-        Icon(icon, contentDescription = null, tint = fg, modifier = Modifier.size(20.dp))
-        Text(label, color = fg, fontSize = 14.sp, fontWeight = FontWeight.Bold, letterSpacing = 0.5.sp)
+        Icon(icon, contentDescription = null, tint = fg, modifier = Modifier.size(22.dp))
+        Text(label, color = fg, fontSize = 15.sp, fontWeight = FontWeight.Bold, letterSpacing = 0.5.sp)
     }
 }
 

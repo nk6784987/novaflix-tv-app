@@ -398,15 +398,17 @@ fun PlayerScreen(
     // Disk cache singleton: previously played segments load instantly
     val streamCache = remember { com.example.util.MediaCacheSingleton.getInstance(context) }
 
+    val isTvForPlayer = LocalIsTv.current
     val loadControl = remember {
         DefaultLoadControl.Builder()
             .setBufferDurationsMs(
-                15000, // minBufferMs (steady-state target; lower than before so playback starts sooner)
-                120000, // maxBufferMs
-                1200,  // bufferForPlaybackMs (start playing as soon as ~1.2s is buffered)
-                2500   // bufferForPlaybackAfterRebufferMs (resume quickly after a stall)
+                if (isTvForPlayer) 20000 else 15000, // minBufferMs - TV needs more buffer to stay smooth
+                if (isTvForPlayer) 180000 else 120000, // maxBufferMs
+                if (isTvForPlayer) 2000 else 1200,    // bufferForPlaybackMs - TV: start after 2s buffered
+                if (isTvForPlayer) 5000 else 2500     // bufferForPlaybackAfterRebufferMs
             )
             .setPrioritizeTimeOverSizeThresholds(true)
+            .setTargetBufferBytes(DefaultLoadControl.DEFAULT_TARGET_BUFFER_BYTES)
             .build()
     }
 
@@ -423,6 +425,9 @@ fun PlayerScreen(
             .setAudioAttributes(audioAttrs, true)
             .setHandleAudioBecomingNoisy(true)
             .setWakeMode(C.WAKE_MODE_NETWORK)
+            .setSeekBackIncrementMs(10_000)
+            .setSeekForwardIncrementMs(10_000)
+            .setReleaseTimeoutMs(3_000) // prevents ANR on exit
             .build().apply {
                 playWhenReady = true
                 // no random subtitle turning on by itself - user picks from the panel

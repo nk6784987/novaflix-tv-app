@@ -5,6 +5,7 @@ import android.util.Log
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
 import androidx.activity.enableEdgeToEdge
+import androidx.core.splashscreen.SplashScreen.Companion.installSplashScreen
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.material3.Surface
 import androidx.compose.ui.Modifier
@@ -16,11 +17,19 @@ import com.example.ui.components.isTelevisionDevice
 import com.example.ui.navigation.AppNavGraph
 import com.example.ui.theme.CineStreamTheme
 import com.example.ui.theme.PitchBlack
+import coil.Coil
+import coil.ImageLoader
+import coil.disk.DiskCache
+import coil.memory.MemoryCache
+import okio.Path.Companion.toOkioPath
 import com.google.firebase.FirebaseApp
 
 class MainActivity : ComponentActivity() {
   override fun onCreate(savedInstanceState: Bundle?) {
     super.onCreate(savedInstanceState)
+    // Install the Splash Screen API - shows the app icon instead of a black screen
+    // while Compose is warming up. On Android 12+ this is mandatory for the OS splash.
+    installSplashScreen()
     enableEdgeToEdge()
 
     try {
@@ -37,6 +46,26 @@ class MainActivity : ComponentActivity() {
         .setPersistenceEnabled(true)
     } catch (e: Throwable) {
       Log.w("MainActivity", "RTDB persistence note: ${e.message}")
+    }
+
+    // Coil image loader — TV needs a larger memory cache for smooth poster loading
+    // and a persistent disk cache so posters don't re-download every session.
+    if (!Coil.isInitialized()) {
+        val imageLoader = ImageLoader.Builder(this)
+            .memoryCache {
+                MemoryCache.Builder(this)
+                    .maxSizePercent(0.30) // 30% of app RAM for image cache
+                    .build()
+            }
+            .diskCache {
+                DiskCache.Builder()
+                    .directory(cacheDir.resolve("image_cache").toOkioPath())
+                    .maxSizeBytes(256L * 1024 * 1024) // 256 MB disk cache
+                    .build()
+            }
+            .crossfade(true)
+            .build()
+        Coil.setImageLoader(imageLoader)
     }
 
     val prefs = com.example.data.repository.AppPrefs.get(this)
