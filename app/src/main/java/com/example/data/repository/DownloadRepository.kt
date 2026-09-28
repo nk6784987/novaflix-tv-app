@@ -140,7 +140,17 @@ class DownloadRepository(
                 return@withContext
             }
 
-            val body = response.body ?: run { emit(DownloadProgress.Failed("Empty response body")); return@flow }
+            val body = response.body ?: run {
+                downloadDao.updateDownloadProgress(
+                    id = downloadId,
+                    status = "FAILED",
+                    progress = 0,
+                    downloadedBytes = 0L,
+                    totalBytes = 0L,
+                    filePath = null
+                )
+                return@withContext
+            }
             val totalBytes = body.contentLength().let { if (it <= 0) 10500000L else it }
             val inputStream = body.byteStream()
             val outputStream = outputFile.outputStream()
