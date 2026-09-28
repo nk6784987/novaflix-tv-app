@@ -50,7 +50,7 @@ class MainActivity : ComponentActivity() {
 
     // Coil image loader — TV needs a larger memory cache for smooth poster loading
     // and a persistent disk cache so posters don't re-download every session.
-    if (!Coil.isInitialized()) {
+    run {
         val imageLoader = ImageLoader.Builder(this)
             .memoryCache {
                 MemoryCache.Builder(this)
