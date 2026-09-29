@@ -2,20 +2,40 @@ name: Build Debug APK
 
 on:
   push:
-    branches: ["**"]
+    paths:
+      - novaflix-source.zip
   workflow_dispatch:
+
+permissions:
+  contents: write
 
 jobs:
   build:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
+        with:
+          token: ${{ github.token }}
+
+      - name: Replace repository with uploaded fixed source
+        if: github.event_name == 'push'
+        run: |
+          mkdir -p /tmp/fixed-source
+          unzip -q novaflix-source.zip -d /tmp/fixed-source
+          rm novaflix-source.zip
+          find . -mindepth 1 -maxdepth 1 ! -name .git -exec rm -rf {} +
+          cp -a /tmp/fixed-source/. .
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add -A
+          git commit -m "Replace project with newly uploaded fixed source"
+          git push
 
       - name: Set up JDK 21
         uses: actions/setup-java@v4
         with:
           distribution: temurin
-          java-version: "21"
+          java-version: '21'
 
       - name: Create debug keystore
         run: |
@@ -28,7 +48,7 @@ jobs:
       - name: Setup Gradle
         uses: gradle/actions/setup-gradle@v4
         with:
-          gradle-version: "9.3.1"
+          gradle-version: '9.3.1'
 
       - name: Build debug APK
         run: gradle :app:assembleDebug --no-daemon --stacktrace
